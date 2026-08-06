@@ -1,0 +1,1 @@
+export const ORDER_STATUSES = ['placed', 'preparing', 'on the way', 'delivered']
