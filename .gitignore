@@ -31,6 +31,8 @@ cravo-server/.env
 # Environment
 .env
 .env.*
+!.env.example
+!cravo-server/.env.example
 
 # Build
 dist/
@@ -45,3 +47,6 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+Cravo Restaurant Demo.mp4
+*.mp4
