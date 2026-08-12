@@ -1,5 +1,4 @@
 import axiosInstance from '../../../shared/services/axiosInstance'
-import { getAdminStats } from '../services/adminApi'
 
 // RESTAURANTS
 export async function getAllRestaurantsAdmin({ page = 1, limit = 10 } = {}) {
@@ -82,7 +81,7 @@ export async function deleteMenuItem(id) {
   await axiosInstance.delete(`/admin/menu-items/${id}`)
 }
 
-// src/features/admin/services/adminApi.js — remove the broken import line at the top, add this instead:
+// ADMIN STATS
 export async function getAdminStats() {
   const { data } = await axiosInstance.get('/admin/stats')
   return data
