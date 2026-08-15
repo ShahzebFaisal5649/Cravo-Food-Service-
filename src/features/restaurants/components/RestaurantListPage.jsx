@@ -1,28 +1,31 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useRestaurants } from '../hooks/useRestaurants'
-import { useFavorites, useToggleFavorite } from '../../favorites/hooks/useFavorites'
-import { useAuthStore } from '../../auth/store/authStore'
-import { toast } from '../../../store/toastStore'
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useRestaurants } from "../hooks/useRestaurants";
+import {
+  useFavorites,
+  useToggleFavorite,
+} from "../../favorites/hooks/useFavorites";
+import { useAuthStore } from "../../auth/store/authStore";
+import { toast } from "../../../store/toastStore";
 
 export function RestaurantCard({ restaurant }) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn)
-  const { data: favoriteIds } = useFavorites()
-  const isFavorite = (favoriteIds || []).includes(restaurant.id)
-  const toggleFavorite = useToggleFavorite()
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const { data: favoriteIds } = useFavorites();
+  const isFavorite = (favoriteIds || []).includes(restaurant.id);
+  const toggleFavorite = useToggleFavorite();
 
   function handleHeartClick(e) {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!isLoggedIn) {
-      navigate(`/login?next=${encodeURIComponent(location.pathname)}`)
-      return
+      navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
+      return;
     }
-    toggleFavorite.mutate({ restaurantId: restaurant.id, isFavorite })
-    toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites')
+    toggleFavorite.mutate({ restaurantId: restaurant.id, isFavorite });
+    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
   }
 
   return (
@@ -32,7 +35,11 @@ export function RestaurantCard({ restaurant }) {
     >
       <div className="relative">
         {restaurant.image ? (
-          <img src={restaurant.image} alt={restaurant.name} className="w-full h-40 object-cover" />
+          <img
+            src={restaurant.image}
+            alt={restaurant.name}
+            className="w-full h-40 object-cover"
+          />
         ) : (
           <div className="w-full h-40 bg-slate flex items-center justify-center text-warmGray text-sm">
             No image
@@ -45,10 +52,10 @@ export function RestaurantCard({ restaurant }) {
         )}
         <button
           onClick={handleHeartClick}
-          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-charcoal/80 flex items-center justify-center text-lg"
         >
-          {isFavorite ? '❤️' : '🤍'}
+          {isFavorite ? "❤️" : "🤍"}
         </button>
       </div>
       <div className="p-4">
@@ -60,7 +67,7 @@ export function RestaurantCard({ restaurant }) {
         </div>
       </div>
     </Link>
-  )
+  );
 }
 
 function RestaurantSkeleton() {
@@ -72,34 +79,35 @@ function RestaurantSkeleton() {
         <div className="h-3 bg-borderDark rounded w-1/2" />
       </div>
     </div>
-  )
+  );
 }
 
 export default function RestaurantListPage() {
-  const [search, setSearch] = useState('')
-  const [cuisineFilter, setCuisineFilter] = useState('All')
-  const [sortBy, setSortBy] = useState('rating')
+  const [search, setSearch] = useState("");
+  const [cuisineFilter, setCuisineFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("rating");
 
-  const { data: restaurants, isLoading, isError } = useRestaurants()
-
+  const { data: restaurants, isLoading, isError } = useRestaurants();
+  console.log("RESTAURANTS:", restaurants);
+  console.log("IS ARRAY:", Array.isArray(restaurants));
   const cuisines = restaurants
-    ? ['All', ...new Set(restaurants.map((r) => r.cuisine))]
-    : ['All']
+    ? ["All", ...new Set(restaurants.map((r) => r.cuisine))]
+    : ["All"];
 
-  let filtered = restaurants || []
+  let filtered = restaurants || [];
   if (search) {
     filtered = filtered.filter((r) =>
-      r.name.toLowerCase().includes(search.toLowerCase())
-    )
+      r.name.toLowerCase().includes(search.toLowerCase()),
+    );
   }
-  if (cuisineFilter !== 'All') {
-    filtered = filtered.filter((r) => r.cuisine === cuisineFilter)
+  if (cuisineFilter !== "All") {
+    filtered = filtered.filter((r) => r.cuisine === cuisineFilter);
   }
   filtered = [...filtered].sort((a, b) => {
-    if (sortBy === 'rating') return b.rating - a.rating
-    if (sortBy === 'name') return a.name.localeCompare(b.name)
-    return 0
-  })
+    if (sortBy === "rating") return b.rating - a.rating;
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    return 0;
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -119,7 +127,9 @@ export default function RestaurantListPage() {
           className="bg-slate border border-borderDark rounded-lg px-4 py-2 text-offwhite focus:outline-none focus:border-gold"
         >
           {cuisines.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
         <select
@@ -133,17 +143,23 @@ export default function RestaurantListPage() {
       </div>
 
       {isError && (
-        <p className="text-error text-center py-8">Something went wrong loading restaurants.</p>
+        <p className="text-error text-center py-8">
+          Something went wrong loading restaurants.
+        </p>
       )}
 
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 6 }).map((_, i) => <RestaurantSkeleton key={i} />)}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <RestaurantSkeleton key={i} />
+          ))}
         </div>
       )}
 
       {!isLoading && !isError && filtered.length === 0 && (
-        <p className="text-warmGray text-center py-8">No restaurants match your search.</p>
+        <p className="text-warmGray text-center py-8">
+          No restaurants match your search.
+        </p>
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (
@@ -154,5 +170,5 @@ export default function RestaurantListPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
