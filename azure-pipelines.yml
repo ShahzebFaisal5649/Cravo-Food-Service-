@@ -15,7 +15,44 @@ steps:
 
 
   # ============================================================
-  # 2. VERIFY FRONTEND VM
+  # 2. DIAGNOSE SUDO & SYSTEM ENVIRONMENT
+  # ============================================================
+  - script: |
+      set -x
+
+      echo "=== Identity ==="
+      whoami
+      id
+      hostname
+      pwd
+
+      echo "=== SUDO LOCATION ==="
+      which sudo
+      sudo --version | head -2
+
+      echo "=== SUDO LIST ==="
+      sudo -n -l
+
+      echo "=== SUDO TRUE TEST ==="
+      sudo -n true
+      echo "sudo_true_exit=$?"
+
+      echo "=== NGINX LOCATION ==="
+      which nginx
+      ls -l /usr/sbin/nginx
+
+      echo "=== NGINX TEST ==="
+      sudo -n /usr/sbin/nginx -t
+      echo "nginx_exit=$?"
+
+      echo "=== SYSTEMCTL TEST ==="
+      sudo -n /usr/bin/systemctl is-active nginx
+      echo "systemctl_exit=$?"
+    displayName: "Diagnose Frontend VM Sudo"
+
+
+  # ============================================================
+  # 3. VERIFY FRONTEND VM
   # ============================================================
   - script: |
       set -e
@@ -39,12 +76,12 @@ steps:
       echo "=== Docker ==="
       docker --version
       docker compose version
-      systemctl is-active docker
+      /usr/bin/systemctl is-active docker
 
       echo ""
       echo "=== Nginx ==="
-      sudo -n nginx -t
-      sudo -n systemctl is-active nginx
+      sudo -n /usr/sbin/nginx -t
+      sudo -n /usr/bin/systemctl is-active nginx
 
       echo ""
       echo "=== Frontend Directory ==="
@@ -62,7 +99,7 @@ steps:
 
 
   # ============================================================
-  # 3. INSTALL DEPENDENCIES
+  # 4. INSTALL DEPENDENCIES
   # ============================================================
   - script: |
       set -e
@@ -79,7 +116,7 @@ steps:
 
 
   # ============================================================
-  # 4. BUILD FRONTEND
+  # 5. BUILD FRONTEND
   # ============================================================
   - script: |
       set -e
@@ -104,7 +141,7 @@ steps:
 
 
   # ============================================================
-  # 5. DEPLOY FRONTEND TO NGINX
+  # 6. DEPLOY FRONTEND TO NGINX
   # ============================================================
   - script: |
       set -e
@@ -153,17 +190,17 @@ steps:
       echo ""
       echo "=== Testing Nginx Configuration ==="
 
-      sudo -n nginx -t
+      sudo -n /usr/sbin/nginx -t
 
       echo ""
       echo "=== Reloading Nginx ==="
 
-      sudo -n systemctl reload nginx
+      sudo -n /usr/bin/systemctl reload nginx
 
       echo ""
       echo "=== Nginx Status ==="
 
-      sudo -n systemctl is-active nginx
+      sudo -n /usr/bin/systemctl is-active nginx
 
       echo ""
       echo "Frontend deployment completed successfully."
@@ -171,7 +208,7 @@ steps:
 
 
   # ============================================================
-  # 6. VERIFY DEPLOYMENT
+  # 7. VERIFY DEPLOYMENT
   # ============================================================
   - script: |
       set -e
@@ -208,7 +245,7 @@ steps:
       echo ""
       echo "=== Nginx Status ==="
 
-      sudo -n systemctl is-active nginx
+      sudo -n /usr/bin/systemctl is-active nginx
 
       echo ""
       echo "========================================"
