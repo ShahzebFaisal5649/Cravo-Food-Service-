@@ -6,64 +6,212 @@ pool:
     - Agent.Name -equals cravo-frontend-vm
 
 steps:
+
+  # ============================================================
+  # 1. CHECKOUT SOURCE
+  # ============================================================
   - checkout: self
     displayName: "Checkout Cravo Frontend"
 
+
+  # ============================================================
+  # 2. VERIFY FRONTEND VM
+  # ============================================================
   - script: |
+      set -e
+
+      echo "========================================"
+      echo "        CRAVO FRONTEND VM CHECK"
+      echo "========================================"
+
+      echo ""
       echo "=== Agent Information ==="
       hostname
+      whoami
+      pwd
 
-      echo "=== Node ==="
+      echo ""
+      echo "=== Node.js ==="
       node --version
       npm --version
 
+      echo ""
       echo "=== Docker ==="
       docker --version
       docker compose version
+      systemctl is-active docker
 
+      echo ""
       echo "=== Nginx ==="
       sudo -n nginx -t
       sudo -n systemctl is-active nginx
+
+      echo ""
+      echo "=== Frontend Directory ==="
+      sudo -n mkdir -p /var/www/cravo/dist
+      sudo -n ls -ld /var/www/cravo
+      sudo -n ls -ld /var/www/cravo/dist
+
+      echo ""
+      echo "=== Sudo Check ==="
+      sudo -n true
+
+      echo ""
+      echo "Frontend VM verification completed successfully."
     displayName: "Verify Frontend VM"
 
+
+  # ============================================================
+  # 3. INSTALL DEPENDENCIES
+  # ============================================================
   - script: |
-      echo "=== Installing dependencies ==="
+      set -e
+
+      echo "========================================"
+      echo "      INSTALLING DEPENDENCIES"
+      echo "========================================"
+
       npm ci
+
+      echo ""
+      echo "Dependencies installed successfully."
     displayName: "Install Frontend Dependencies"
 
+
+  # ============================================================
+  # 4. BUILD FRONTEND
+  # ============================================================
   - script: |
-      echo "=== Building Cravo Frontend ==="
+      set -e
+
+      echo "========================================"
+      echo "        BUILDING CRAVO FRONTEND"
+      echo "========================================"
+
       npm run build
 
+      echo ""
       echo "=== Build Output ==="
       ls -lah dist
+
+      echo ""
+      echo "=== index.html ==="
+      test -f dist/index.html
+
+      echo ""
+      echo "Frontend build completed successfully."
     displayName: "Build Frontend"
 
+
+  # ============================================================
+  # 5. DEPLOY FRONTEND TO NGINX
+  # ============================================================
   - script: |
-      echo "=== Deploying Frontend ==="
+      set -e
 
-      sudo -n rm -rf /var/www/cravo/dist/*
-      sudo -n cp -r dist/. /var/www/cravo/dist/
+      echo "========================================"
+      echo "       DEPLOYING CRAVO FRONTEND"
+      echo "========================================"
 
-      sudo -n chown -R www-data:www-data /var/www/cravo/dist
+      DEPLOY_DIR="/var/www/cravo"
+      NEW_DIST="/var/www/cravo/dist.new"
+      LIVE_DIST="/var/www/cravo/dist"
 
+      echo ""
+      echo "=== Preparing deployment directory ==="
+
+      sudo -n rm -rf "$NEW_DIST"
+      sudo -n mkdir -p "$NEW_DIST"
+
+      echo ""
+      echo "=== Copying new frontend build ==="
+
+      sudo -n cp -r dist/. "$NEW_DIST/"
+
+      echo ""
+      echo "=== Validating new build ==="
+
+      sudo -n test -f "$NEW_DIST/index.html"
+      sudo -n ls -lah "$NEW_DIST"
+
+      echo ""
+      echo "=== Setting ownership ==="
+
+      sudo -n chown -R www-data:www-data "$NEW_DIST"
+
+      echo ""
+      echo "=== Replacing live frontend ==="
+
+      sudo -n rm -rf "$LIVE_DIST"
+      sudo -n mv "$NEW_DIST" "$LIVE_DIST"
+
+      echo ""
       echo "=== Deployed Files ==="
-      sudo -n ls -lah /var/www/cravo/dist
 
-      echo "=== Testing Nginx ==="
+      sudo -n ls -lah "$LIVE_DIST"
+
+      echo ""
+      echo "=== Testing Nginx Configuration ==="
+
       sudo -n nginx -t
 
+      echo ""
       echo "=== Reloading Nginx ==="
+
       sudo -n systemctl reload nginx
 
+      echo ""
       echo "=== Nginx Status ==="
+
       sudo -n systemctl is-active nginx
+
+      echo ""
+      echo "Frontend deployment completed successfully."
     displayName: "Deploy Frontend to Nginx"
 
-  - script: |
-      echo "=== Frontend HTTP Test ==="
-      curl -I http://localhost/
 
+  # ============================================================
+  # 6. VERIFY DEPLOYMENT
+  # ============================================================
+  - script: |
+      set -e
+
+      echo "========================================"
+      echo "       VERIFYING FRONTEND DEPLOYMENT"
+      echo "========================================"
+
+      echo ""
+      echo "=== Frontend Files ==="
+
+      sudo -n test -f /var/www/cravo/dist/index.html
+      sudo -n ls -lah /var/www/cravo/dist
+
+      echo ""
+      echo "=== Frontend HTTP Test ==="
+
+      FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+
+      echo "Frontend HTTP Status: $FRONTEND_STATUS"
+
+      if [ "$FRONTEND_STATUS" != "200" ]; then
+        echo "ERROR: Frontend did not return HTTP 200."
+        exit 1
+      fi
+
+      echo ""
       echo "=== API Proxy Test ==="
-      curl -I http://localhost/api/
+
+      API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/)
+
+      echo "API Proxy HTTP Status: $API_STATUS"
+
+      echo ""
+      echo "=== Nginx Status ==="
+
+      sudo -n systemctl is-active nginx
+
+      echo ""
+      echo "========================================"
+      echo "   CRAVO FRONTEND DEPLOYMENT SUCCESS"
+      echo "========================================"
     displayName: "Verify Deployment"
