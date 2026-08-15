@@ -1,0 +1,69 @@
+trigger: none
+
+pool:
+  name: cravo-agents
+  demands:
+    - Agent.Name -equals cravo-frontend-vm
+
+steps:
+  - checkout: self
+    displayName: "Checkout Cravo Frontend"
+
+  - script: |
+      echo "=== Agent Information ==="
+      hostname
+
+      echo "=== Node ==="
+      node --version
+      npm --version
+
+      echo "=== Docker ==="
+      docker --version
+      docker compose version
+
+      echo "=== Nginx ==="
+      sudo -n nginx -t
+      sudo -n systemctl is-active nginx
+    displayName: "Verify Frontend VM"
+
+  - script: |
+      echo "=== Installing dependencies ==="
+      npm ci
+    displayName: "Install Frontend Dependencies"
+
+  - script: |
+      echo "=== Building Cravo Frontend ==="
+      npm run build
+
+      echo "=== Build Output ==="
+      ls -lah dist
+    displayName: "Build Frontend"
+
+  - script: |
+      echo "=== Deploying Frontend ==="
+
+      sudo -n rm -rf /var/www/cravo/dist/*
+      sudo -n cp -r dist/. /var/www/cravo/dist/
+
+      sudo -n chown -R www-data:www-data /var/www/cravo/dist
+
+      echo "=== Deployed Files ==="
+      sudo -n ls -lah /var/www/cravo/dist
+
+      echo "=== Testing Nginx ==="
+      sudo -n nginx -t
+
+      echo "=== Reloading Nginx ==="
+      sudo -n systemctl reload nginx
+
+      echo "=== Nginx Status ==="
+      sudo -n systemctl is-active nginx
+    displayName: "Deploy Frontend to Nginx"
+
+  - script: |
+      echo "=== Frontend HTTP Test ==="
+      curl -I http://localhost/
+
+      echo "=== API Proxy Test ==="
+      curl -I http://localhost/api/
+    displayName: "Verify Deployment"
