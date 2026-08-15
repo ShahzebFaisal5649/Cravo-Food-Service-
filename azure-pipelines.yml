@@ -115,7 +115,7 @@ steps:
     displayName: "Install Frontend Dependencies"
 
 
-  # ============================================================
+    # ============================================================
   # 5. BUILD FRONTEND
   # ============================================================
   - script: |
@@ -125,11 +125,34 @@ steps:
       echo "        BUILDING CRAVO FRONTEND"
       echo "========================================"
 
+      echo ""
+      echo "=== Production API Configuration ==="
+      echo "VITE_API_URL=$VITE_API_URL"
+
+      if [ "$VITE_API_URL" != "/api" ]; then
+        echo "ERROR: VITE_API_URL must be /api"
+        exit 1
+      fi
+
+      echo ""
+      echo "=== Building frontend ==="
+
       npm run build
 
       echo ""
       echo "=== Build Output ==="
       ls -lah dist
+
+      echo ""
+      echo "=== Verifying API URL was embedded ==="
+
+      if grep -RIl --include='*.js' \
+        -F 'http://localhost:5000/api' dist/assets >/dev/null 2>&1; then
+        echo "ERROR: Production build still contains localhost:5000/api"
+        exit 1
+      fi
+
+      echo "No localhost:5000/api reference found in production build."
 
       echo ""
       echo "=== index.html ==="
@@ -138,8 +161,9 @@ steps:
       echo ""
       echo "Frontend build completed successfully."
     displayName: "Build Frontend"
-
-
+    env:
+      VITE_API_URL: /api
+      
   # ============================================================
   # 6. DEPLOY FRONTEND TO NGINX
   # ============================================================
