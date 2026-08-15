@@ -1,7 +1,7 @@
 trigger: none
 
 pool:
-  name: cravo-agents
+  name: Default
   demands:
     - Agent.Name -equals cravo-frontend-vm
 
