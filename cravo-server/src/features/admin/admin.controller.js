@@ -129,8 +129,8 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   order.status = status
   await order.save()
 
-  getIO().to(`user:${order.userId}`).emit('order:updated', order)
-  getIO().to('admin').emit('admin:orderUpdated', order)
+  getIO()?.to(`user:${order.userId}`).emit('order:updated', order)
+  getIO()?.to('admin').emit('admin:orderUpdated', order)
 
   res.json(order)
 })

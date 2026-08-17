@@ -55,8 +55,5 @@ router.get('/restaurants/:restaurantId/menu', getMenuItemsForRestaurant)
 router.post('/menu-items', validate(menuItemSchema), createMenuItem)
 router.put('/menu-items/:id', validate(menuItemUpdateSchema), updateMenuItem)
 router.delete('/menu-items/:id', deleteMenuItem)
-
- // restaurants
- router.get('/restaurants', getAllRestaurantsAdmin)
  
 export default router

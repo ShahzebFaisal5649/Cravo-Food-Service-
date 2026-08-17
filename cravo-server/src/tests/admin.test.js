@@ -14,6 +14,7 @@ async function makeAdmin(email) {
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test_secret_key'
+  process.env.REFRESH_TOKEN_SECRET = 'test_refresh_secret_key'
   await connectTestDB()
 })
 

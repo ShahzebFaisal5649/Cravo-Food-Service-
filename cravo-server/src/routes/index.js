@@ -7,6 +7,7 @@ import adminRoutes from './admin.routes.js'
 import paymentRoutes from './payments.routes.js'
 import favoritesRoutes from './favorites.routes.js'
 
+
 const router = express.Router()
 
 router.use('/auth', authRoutes)

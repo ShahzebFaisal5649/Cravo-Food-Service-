@@ -16,7 +16,6 @@ export function initSocket(httpServer) {
     },
   })
 
-  // Auth every socket connection the same way the REST API does — a valid JWT is required.
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token
@@ -26,6 +25,7 @@ export function initSocket(httpServer) {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
       const user = await User.findById(decoded.id).select('-password')
+
       if (!user) {
         return next(new Error('Not authorized, user not found'))
       }
@@ -40,20 +40,16 @@ export function initSocket(httpServer) {
   io.on('connection', (socket) => {
     const { user } = socket
 
-    // Every user gets their own room so we can push order updates straight to them.
-    socket.join(`user:${user._id}`)
-
     if (user.isAdmin) {
       socket.join('admin')
     }
+
+    socket.join(`user:${user._id}`)
   })
 
   return io
 }
 
 export function getIO() {
-  if (!io) {
-    throw new Error('Socket.io not initialized — call initSocket(server) first')
-  }
   return io
 }

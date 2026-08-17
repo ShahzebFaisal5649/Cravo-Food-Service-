@@ -1,0 +1,659 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "5079683288467066859"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-cravo-devops"
+    },
+    "acrName": {
+      "type": "string",
+      "defaultValue": "acrcravodevops"
+    },
+    "acrSku": {
+      "type": "string",
+      "defaultValue": "Basic"
+    },
+    "sshSourceIp": {
+      "type": "string"
+    },
+    "backendVmName": {
+      "type": "string",
+      "defaultValue": "vm-cravo-backend"
+    },
+    "frontendVmName": {
+      "type": "string",
+      "defaultValue": "vm-cravo-frontend"
+    },
+    "backendPrivateIp": {
+      "type": "string",
+      "defaultValue": "10.0.1.4"
+    },
+    "frontendPrivateIp": {
+      "type": "string",
+      "defaultValue": "10.0.2.4"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cravo-network",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetName": {
+            "value": "[parameters('vnetName')]"
+          },
+          "sshSourceIp": {
+            "value": "[parameters('sshSourceIp')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "10042247415616941922"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "vnetName": {
+              "type": "string"
+            },
+            "addressPrefix": {
+              "type": "string",
+              "defaultValue": "10.0.0.0/16"
+            },
+            "backendSubnetPrefix": {
+              "type": "string",
+              "defaultValue": "10.0.1.0/24"
+            },
+            "frontendSubnetPrefix": {
+              "type": "string",
+              "defaultValue": "10.0.2.0/24"
+            },
+            "sshSourceIp": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2024-05-01",
+              "name": "nsg-cravo-backend",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-HTTP",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationPortRange": "80",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-HTTPS",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationPortRange": "443",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-Frontend-Backend",
+                    "properties": {
+                      "priority": 120,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "[parameters('frontendSubnetPrefix')]",
+                      "destinationPortRange": "5000",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-Mongo-BackendSubnet",
+                    "properties": {
+                      "priority": 130,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "[parameters('backendSubnetPrefix')]",
+                      "destinationPortRange": "27017",
+                      "destinationAddressPrefix": "*"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2024-05-01",
+              "name": "nsg-cravo-frontend",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-HTTP",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationPortRange": "80",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-HTTPS",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationPortRange": "443",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-SSH-MyIP",
+                    "properties": {
+                      "priority": 130,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "[format('{0}/32', parameters('sshSourceIp'))]",
+                      "destinationPortRange": "22",
+                      "destinationAddressPrefix": "*"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2024-05-01",
+              "name": "vm-cravo-agentNSG",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "default-allow-ssh",
+                    "properties": {
+                      "priority": 1000,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "sourceAddressPrefix": "[format('{0}/32', parameters('sshSourceIp'))]",
+                      "destinationPortRange": "22",
+                      "destinationAddressPrefix": "*"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2024-05-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('addressPrefix')]"
+                  ]
+                },
+                "privateEndpointVNetPolicies": "Disabled",
+                "subnets": [
+                  {
+                    "name": "backend-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('backendSubnetPrefix')]"
+                    }
+                  },
+                  {
+                    "name": "frontend-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('frontendSubnetPrefix')]"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "backendSubnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'backend-subnet')]"
+            },
+            "frontendSubnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'frontend-subnet')]"
+            },
+            "backendNsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-cravo-backend')]"
+            },
+            "frontendNsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg-cravo-frontend')]"
+            },
+            "agentNsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', 'vm-cravo-agentNSG')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cravo-acr",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "acrName": {
+            "value": "[parameters('acrName')]"
+          },
+          "acrSku": {
+            "value": "[parameters('acrSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "17100339671267296593"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "acrName": {
+              "type": "string"
+            },
+            "acrSku": {
+              "type": "string",
+              "defaultValue": "Basic"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2025-04-01",
+              "name": "[parameters('acrName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('acrSku')]"
+              },
+              "properties": {
+                "adminUserEnabled": false,
+                "dataEndpointEnabled": false,
+                "encryption": {
+                  "status": "disabled"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "acrId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]"
+            },
+            "loginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2025-04-01').loginServer]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cravo-backend-vm",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vmName": {
+            "value": "[parameters('backendVmName')]"
+          },
+          "vmSize": {
+            "value": "Standard_B2als_v2"
+          },
+          "adminUsername": {
+            "value": "azureuser"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cravo-network'), '2025-04-01').outputs.backendSubnetId.value]"
+          },
+          "nsgId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cravo-network'), '2025-04-01').outputs.backendNsgId.value]"
+          },
+          "privateIp": {
+            "value": "[parameters('backendPrivateIp')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "16025163295078511972"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "vmName": {
+              "type": "string"
+            },
+            "vmSize": {
+              "type": "string",
+              "defaultValue": "Standard_B2als_v2"
+            },
+            "adminUsername": {
+              "type": "string",
+              "defaultValue": "azureuser"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "nsgId": {
+              "type": "string"
+            },
+            "privateIp": {
+              "type": "string",
+              "defaultValue": "10.0.1.4"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}-nic', parameters('vmName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "networkSecurityGroup": {
+                  "id": "[parameters('nsgId')]"
+                },
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "privateIPAllocationMethod": "Static",
+                      "privateIPAddress": "[parameters('privateIp')]",
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2024-07-01",
+              "name": "[parameters('vmName')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                  "computerName": "[parameters('vmName')]",
+                  "adminUsername": "[parameters('adminUsername')]"
+                },
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "ubuntu-24_04-lts",
+                    "sku": "server",
+                    "version": "latest"
+                  },
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "Standard_LRS"
+                    }
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]",
+                      "properties": {
+                        "primary": true
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'cravo-network')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "cravo-frontend-vm",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vmName": {
+            "value": "[parameters('frontendVmName')]"
+          },
+          "vmSize": {
+            "value": "Standard_B2als_v2"
+          },
+          "adminUsername": {
+            "value": "azureuser"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cravo-network'), '2025-04-01').outputs.frontendSubnetId.value]"
+          },
+          "nsgId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cravo-network'), '2025-04-01').outputs.frontendNsgId.value]"
+          },
+          "publicIpId": {
+            "value": "[resourceId('Microsoft.Network/publicIPAddresses', 'vm-cravo-frontend-pip')]"
+          },
+          "privateIp": {
+            "value": "[parameters('frontendPrivateIp')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "14582440114001543632"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "vmName": {
+              "type": "string"
+            },
+            "vmSize": {
+              "type": "string",
+              "defaultValue": "Standard_B2als_v2"
+            },
+            "adminUsername": {
+              "type": "string",
+              "defaultValue": "azureuser"
+            },
+            "subnetId": {
+              "type": "string"
+            },
+            "nsgId": {
+              "type": "string"
+            },
+            "publicIpId": {
+              "type": "string"
+            },
+            "privateIp": {
+              "type": "string",
+              "defaultValue": "10.0.2.4"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2024-05-01",
+              "name": "[format('{0}-nic', parameters('vmName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "networkSecurityGroup": {
+                  "id": "[parameters('nsgId')]"
+                },
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "privateIPAllocationMethod": "Static",
+                      "privateIPAddress": "[parameters('privateIp')]",
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "publicIPAddress": {
+                        "id": "[parameters('publicIpId')]"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2024-07-01",
+              "name": "[parameters('vmName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                  "computerName": "[parameters('vmName')]",
+                  "adminUsername": "[parameters('adminUsername')]"
+                },
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "ubuntu-24_04-lts",
+                    "sku": "server",
+                    "version": "latest"
+                  },
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "Standard_LRS"
+                    }
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]",
+                      "properties": {
+                        "primary": true
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'cravo-network')]"
+      ]
+    }
+  ]
+}

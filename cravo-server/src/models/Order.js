@@ -2,9 +2,19 @@ import mongoose from 'mongoose'
 
 const orderSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant', required: true },
-    restaurantName: { type: String },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true,
+    },
+    restaurantName: {
+      type: String,
+    },
     items: [
       {
         itemId: String,
@@ -15,15 +25,24 @@ const orderSchema = new mongoose.Schema(
         notes: String,
       },
     ],
-    subtotal: { type: Number },
-    deliveryFee: { type: Number },
-    total: { type: Number, required: true },
+    subtotal: {
+      type: Number,
+    },
+    deliveryFee: {
+      type: Number,
+    },
+    total: {
+      type: Number,
+      required: true,
+    },
     status: {
       type: String,
       enum: ['placed', 'preparing', 'on the way', 'delivered', 'cancelled'],
       default: 'placed',
     },
-    deliveryAddress: { type: String },
+    deliveryAddress: {
+      type: String,
+    },
   },
   {
     timestamps: true,
@@ -37,4 +56,5 @@ const orderSchema = new mongoose.Schema(
     },
   }
 )
+
 export default mongoose.model('Order', orderSchema)

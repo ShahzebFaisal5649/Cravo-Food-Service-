@@ -74,7 +74,7 @@ export const placeOrder = asyncHandler(async (req, res) => {
     status: 'placed',
   })
 
-  getIO().to('admin').emit('admin:orderCreated', order)
+  getIO()?.to('admin').emit('admin:orderCreated', order)
 
   res.status(201).json(order)
 })
@@ -129,7 +129,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   await order.save()
 
   getIO().to(`user:${order.userId}`).emit('order:updated', order)
-  getIO().to('admin').emit('admin:orderUpdated', order)
+  getIO()?.to('admin').emit('admin:orderUpdated', order)
 
   res.json(order)
 })
