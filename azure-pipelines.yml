@@ -1,4 +1,4 @@
-trigger:
+﻿trigger:
   - main
 
 pool:
@@ -233,7 +233,7 @@ steps:
     displayName: "Deploy Frontend to Nginx"
 
 
-  # ============================================================
+    # ============================================================
   # 7. VERIFY DEPLOYMENT
   # ============================================================
   - script: |
@@ -267,6 +267,13 @@ steps:
       API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/)
 
       echo "API Proxy HTTP Status: $API_STATUS"
+
+      if [ "$API_STATUS" = "000" ]; then
+        echo "ERROR: API proxy is unreachable."
+        exit 1
+      fi
+
+      echo "API proxy is reachable."
 
       echo ""
       echo "=== Nginx Status ==="
